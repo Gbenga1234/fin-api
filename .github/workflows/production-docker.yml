@@ -37,7 +37,7 @@ jobs:
     - name: Build Docker image - API
       run: |
         docker build \
-          -f docker/Dockerfile \
+          -f docker/transaction/Dockerfile \
           -t gowobo/fin-api:${{ env.IMAGE_TAG }} \
           .
 
@@ -45,12 +45,12 @@ jobs:
     - name: Build Docker image - Celery
       run: |
         docker build \
-          -f docker/celery/Dockerfile-celery \
-          -t gowobo/fin-celer-api:${{ env.IMAGE_TAG }} \
+          -f docker/transaction/Dockerfile.celery \
+          -t gowobo/fin-celery-api:${{ env.IMAGE_TAG }} \
           .
 
     # 7. Push images
     - name: Push images to DockerHub
       run: |
-        docker push capitalsage/sagecloud-glo-transaction-api:${{ env.IMAGE_TAG }}
-        docker push capitalsage/sagecloud-glo-transaction-api:${{ env.IMAGE_TAG }}
+        docker push gowobo/fin-api:${{ env.IMAGE_TAG }}
+        docker push gowobo/fin-celery-api:${{ env.IMAGE_TAG }}
