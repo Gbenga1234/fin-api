@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: gowobo
+      POSTGRES_PASSWORD: gowobo
+      POSTGRES_DB: gowobo
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    command: ["./start.sh"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://gowobo:gowobo@postgres:5432/gowobo
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    build: .
+    command: ["./worker.sh"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://gowobo:gowobo@postgres:5432/gowobo
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+
+  beat:
+    build: .
+    command: ["./beat.sh"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://gowobo:gowobo@postgres:5432/gowobo
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  postgres_data:
