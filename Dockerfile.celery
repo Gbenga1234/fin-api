@@ -1,0 +1,47 @@
+# Dockerfile for the Celery worker and Celery beat deployments. Shares the
+# same codebase and dependencies as Dockerfile (the web image), but ships
+# without gunicorn as the foreground process and doesn't expose a port -
+# this image is never behind the ingress, it only consumes from the Redis
+# broker.
+#
+# Build from the project root:
+#   docker build -f Dockerfile.celery -t capitalsage/gowobo-celery .
+#
+# Run as a worker (default) or beat (override the command):
+#   docker run capitalsage/gowobo-celery                 # worker
+#   docker run capitalsage/gowobo-celery ./beat.sh        # beat
+
+# --- builder stage: compile wheels so the runtime image stays slim ---
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
+
+# --- runtime stage ---
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libpq5 \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --uid 1000 appuser
+
+COPY --from=builder /wheels /wheels
+COPY requirements.txt .
+RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt \
+    && rm -rf /wheels
+
+COPY . .
+RUN chmod +x worker.sh beat.sh shell.sh && chown -R appuser:appuser /app
+
+USER appuser
+
+# No EXPOSE - the worker/beat processes don't serve HTTP traffic.
+CMD ["./worker.sh"]

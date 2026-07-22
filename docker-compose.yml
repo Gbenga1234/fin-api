@@ -18,7 +18,9 @@ services:
       - "6379:6379"
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     command: ["./start.sh"]
     env_file: .env
     environment:
@@ -32,7 +34,9 @@ services:
       - redis
 
   worker:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
     command: ["./worker.sh"]
     env_file: .env
     environment:
@@ -44,7 +48,9 @@ services:
       - redis
 
   beat:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
     command: ["./beat.sh"]
     env_file: .env
     environment:

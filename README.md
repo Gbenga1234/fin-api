@@ -23,17 +23,38 @@ financial-safety rules:
 ## Layout
 
 ```
-gowobo_py/          project settings, root urls, wsgi
-accounts/           Account model, API, admin, wait_for_db command
-transactions/       Transaction model, TransferService, API, adminshell command
+gowobo_py/          project settings, root urls, wsgi, celery app, logging/middleware
+accounts/            Account model, API, admin, wait_for_db command
+transactions/        Transaction model, TransferService, API, adminshell command, celery tasks
+Dockerfile          API image - runs start.sh (migrate + collectstatic + gunicorn)
+Dockerfile.celery   worker/beat image - runs worker.sh (default) or beat.sh
 gunicorn.conf.py    gunicorn config (env-driven)
 start.sh            migrate + collectstatic + launch gunicorn
+worker.sh           launch celery worker
+beat.sh             launch celery beat (single replica only)
 shell.sh            ./shell.sh          -> interactive admin CLI
                     ./shell.sh django   -> plain `manage.py shell`
-Dockerfile          multi-stage build
+docker-compose.yml  postgres + redis + web + worker + beat, wired together
 requirements.txt
 .env.example
 ```
+
+## Docker images
+
+Two separate images, one per Kubernetes deployment - matching the reference
+project's convention of one Dockerfile per deployable:
+
+```bash
+# API (gunicorn)
+docker build -f Dockerfile -t capitalsage/gowobo-web .
+
+# Celery worker / beat (same image, different command)
+docker build -f Dockerfile.celery -t capitalsage/gowobo-celery .
+docker run capitalsage/gowobo-celery                 # worker (default CMD)
+docker run capitalsage/gowobo-celery ./beat.sh        # beat
+```
+
+
 
 ## Local setup
 
