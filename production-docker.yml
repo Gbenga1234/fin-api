@@ -1,0 +1,56 @@
+Sage cloud-glo
+
+name: Production Docker Deployment
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  docker-build-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Check out the repository
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Step 2: Set up Docker Buildx for multi-platform builds (optional)
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    # Step 3: Log in to Docker Hub
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    # 4. Generate release image tag (shared)
+    - name: Generate image tag
+      run: |
+        SHORT_SHA=$(git rev-parse --short HEAD)
+        DATE=$(date +'%Y%m%d')
+        echo "IMAGE_TAG=prod-${DATE}-${SHORT_SHA}" >> $GITHUB_ENV
+
+    # 5. Build API image
+    - name: Build Docker image - API
+      run: |
+        docker build \
+          -f docker/Dockerfile \
+          -t gowobo/fin-api:${{ env.IMAGE_TAG }} \
+          .
+
+    # 6. Build Celery image
+    - name: Build Docker image - Celery
+      run: |
+        docker build \
+          -f docker/celery/Dockerfile-celery \
+          -t gowobo/fin-celer-api:${{ env.IMAGE_TAG }} \
+          .
+
+    # 7. Push images
+    - name: Push images to DockerHub
+      run: |
+        docker push capitalsage/sagecloud-glo-transaction-api:${{ env.IMAGE_TAG }}
+        docker push capitalsage/sagecloud-glo-transaction-api:${{ env.IMAGE_TAG }}
