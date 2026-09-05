@@ -4,9 +4,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: gowobo
-      POSTGRES_PASSWORD: gowobo
-      POSTGRES_DB: gowobo
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -17,16 +17,16 @@ services:
     ports:
       - "6379:6379"
 
-  web:
+  api:
     build:
       context: .
       dockerfile: Dockerfile
     command: ["./start.sh"]
     env_file: .env
     environment:
-      DATABASE_URL: postgres://gowobo:gowobo@postgres:5432/gowobo
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
     ports:
       - "8000:8000"
     depends_on:
@@ -40,9 +40,9 @@ services:
     command: ["./worker.sh"]
     env_file: .env
     environment:
-      DATABASE_URL: postgres://gowobo:gowobo@postgres:5432/gowobo
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
     depends_on:
       - postgres
       - redis
@@ -54,11 +54,25 @@ services:
     command: ["./beat.sh"]
     env_file: .env
     environment:
-      DATABASE_URL: postgres://gowobo:gowobo@postgres:5432/gowobo
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
     depends_on:
       - postgres
+      - redis
+
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    command: ["celery", "-A", "gowobo_py", "flower", "--port=5555"]
+    env_file: .env
+    environment:
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+    ports:
+      - "${FLOWER_PORT:-5555}:5555"
+    depends_on:
       - redis
 
 volumes:
