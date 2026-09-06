@@ -30,14 +30,14 @@ jobs:
     - name: Build Docker image - API
       run: |
         docker build \
-          -f docker/transaction/Dockerfile \
+          -f docker/Dockerfile \
           -t gowobo/fin-api:${{ env.IMAGE_TAG }} \
           .
 
     - name: Build Docker image - Celery
       run: |
         docker build \
-          -f docker/transaction/Dockerfile.celery \
+          -f docker/Dockerfile.celery \
           -t gowobo/fin-celery-api:${{ env.IMAGE_TAG }} \
           .
 
